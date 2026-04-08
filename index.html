@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shooting Log — JD Meyers</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Cormorant+SC:wght@300;400;500&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --black:   #060608;
+  --deep:    #0d0d10;
+  --surface: #111114;
+  --lift:    #18181c;
+  --edge:    #202025;
+  --line:    rgba(255,255,255,0.06);
+  --line2:   rgba(255,255,255,0.11);
+  --white:   #f4f2ee;
+  --off:     #c8c4bc;
+  --muted:   #6a6760;
+  --dim:     #3a3835;
+  --blue:    #7ab3d4;
+  --blue2:   rgba(122,179,212,0.08);
+  --green:   #7abfa0;
+  --green2:  rgba(122,191,160,0.08);
+  --gold:    #c9a96e;
+  --gold2:   rgba(201,169,110,0.08);
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--black);
+  color: var(--white);
+  font-family: 'DM Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  min-height: 100vh;
+  cursor: default;
+}
+
+/* ── HEADER ─────────────────────────────────────── */
+.header {
+  padding: 32px 48px 28px;
+  border-bottom: 1px solid var(--line);
+  display: flex; align-items: flex-end; justify-content: space-between;
+  animation: fadeDown 0.8s ease both;
+}
+.h-monogram {
+  font-family: 'Cormorant SC', serif;
+  font-size: 11px; font-weight: 400;
+  letter-spacing: 0.25em; color: var(--muted);
+  margin-bottom: 10px;
+}
+.h-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 42px; font-weight: 300;
+  letter-spacing: -0.01em; line-height: 1;
+  color: var(--white);
+}
+.h-title em { font-style: italic; color: var(--off); }
+.h-meta {
+  text-align: right;
+}
+.h-lic {
+  font-size: 10px; letter-spacing: 0.12em;
+  color: var(--muted); margin-bottom: 6px;
+}
+.h-lic span { color: var(--off); }
+.h-total {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 52px; font-weight: 300; line-height: 1;
+  color: var(--white); letter-spacing: -0.02em;
+}
+.h-total-lbl {
+  font-size: 10px; letter-spacing: 0.12em;
+  color: var(--muted); text-align: right; margin-top: 2px;
+}
+
+/* ── NAV ─────────────────────────────────────────── */
+.nav {
+  display: flex; padding: 0 48px;
+  border-bottom: 1px solid var(--line);
+  animation: fadeDown 0.8s 0.1s ease both;
+}
+.nav-tab {
+  font-family: 'Cormorant SC', serif;
+  font-size: 12px; font-weight: 400; letter-spacing: 0.2em;
+  padding: 16px 24px 14px; cursor: pointer;
+  border: none; background: none; color: var(--muted);
+  border-bottom: 1px solid transparent;
+  transition: color 0.25s, border-color 0.25s;
+  position: relative; top: 1px;
+}
+.nav-tab:hover { color: var(--off); }
+.nav-tab.active { color: var(--white); border-bottom-color: var(--white); }
+
+/* ── MAIN ─────────────────────────────────────────── */
+.main { padding: 40px 48px; }
+.page { display: none; }
+.page.active { display: block; }
+
+/* ── STAT ROW ─────────────────────────────────────── */
+.stat-row {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 1px; background: var(--line);
+  border: 1px solid var(--line);
+  margin-bottom: 40px;
+  animation: fadeUp 0.6s 0.15s ease both;
+}
+.stat-card {
+  background: var(--surface);
+  padding: 28px 32px;
+  transition: background 0.3s;
+  position: relative; overflow: hidden;
+}
+.stat-card::after {
+  content: ''; position: absolute;
+  bottom: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--line2), transparent);
+  transform: scaleX(0); transition: transform 0.4s;
+}
+.stat-card:hover { background: var(--lift); }
+.stat-card:hover::after { transform: scaleX(1); }
+.stat-label {
+  font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 12px;
+}
+.stat-value {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 48px; font-weight: 300; line-height: 1;
+  letter-spacing: -0.02em;
+}
+.stat-value.blue { color: var(--blue); }
+.stat-value.green { color: var(--green); }
+.stat-value.gold { color: var(--gold); }
+.stat-value.white { color: var(--white); }
+.stat-sub { font-size: 10px; color: var(--muted); margin-top: 8px; letter-spacing: 0.04em; }
+
+/* ── CHART PANELS ─────────────────────────────────── */
+.panel-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--line); border: 1px solid var(--line); margin-bottom: 24px; }
+.panel-row.single { grid-template-columns: 1fr; }
+.panel {
+  background: var(--surface); padding: 28px 32px;
+  transition: background 0.3s;
+  animation: fadeUp 0.6s 0.25s ease both;
+}
+.panel:hover { background: var(--lift); }
+.panel.full { grid-column: 1/-1; }
+.panel-label {
+  font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 20px;
+}
+.chart-wrap { position: relative; width: 100%; }
+
+/* ── LEGEND ─────────────────────────────────────────── */
+.legend { display: flex; gap: 20px; margin-bottom: 14px; flex-wrap: wrap; }
+.legend-item { display: flex; align-items: center; gap: 8px; font-size: 10px; color: var(--muted); letter-spacing: 0.06em; }
+.legend-line { width: 16px; height: 1px; }
+.legend-block { width: 8px; height: 8px; }
+
+/* ── DIVIDER ─────────────────────────────────────────── */
+.divider { height: 1px; background: var(--line); margin: 32px 0; }
+
+/* ── FIREARM CARDS ─────────────────────────────────── */
+.firearm-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--line); border: 1px solid var(--line); margin-bottom: 24px; }
+.firearm-card {
+  background: var(--surface); cursor: pointer;
+  transition: background 0.3s; position: relative; overflow: hidden;
+  animation: fadeUp 0.6s 0.2s ease both;
+}
+.firearm-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  transform: scaleX(0); transition: transform 0.5s cubic-bezier(0.4,0,0.2,1);
+}
+.firearm-card.blue-card::before { background: var(--blue); }
+.firearm-card.green-card::before { background: var(--green); }
+.firearm-card:hover { background: var(--lift); }
+.firearm-card.active-card { background: var(--lift); }
+.firearm-card.active-card::before { transform: scaleX(1); }
+.fc-head {
+  padding: 28px 32px 20px;
+  border-bottom: 1px solid var(--line);
+  display: flex; justify-content: space-between; align-items: flex-start;
+}
+.fc-name {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 26px; font-weight: 300; letter-spacing: -0.01em;
+}
+.fc-name.blue { color: var(--blue); }
+.fc-name.green { color: var(--green); }
+.fc-type { font-size: 9px; letter-spacing: 0.14em; color: var(--muted); margin-top: 4px; text-transform: uppercase; }
+.fc-badge {
+  font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase;
+  padding: 5px 10px; border: 1px solid var(--line2); color: var(--muted);
+}
+.fc-specs { padding: 20px 32px 28px; }
+.spec-row {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding: 8px 0; border-bottom: 1px solid var(--line);
+  transition: border-color 0.2s;
+}
+.spec-row:last-child { border-bottom: none; }
+.firearm-card:hover .spec-row { border-color: var(--line2); }
+.spec-key { font-size: 10px; letter-spacing: 0.08em; color: var(--muted); }
+.spec-val { font-size: 11px; color: var(--off); text-align: right; letter-spacing: 0.02em; }
+.spec-val.accent-blue { color: var(--blue); }
+.spec-val.accent-green { color: var(--green); }
+
+/* ── SESSION TABLE ─────────────────────────────────── */
+.table-wrap {
+  border: 1px solid var(--line); margin-bottom: 24px;
+  animation: fadeUp 0.6s 0.2s ease both;
+}
+.table-head-bar {
+  padding: 18px 28px; border-bottom: 1px solid var(--line);
+  display: flex; justify-content: space-between; align-items: center;
+  background: var(--surface);
+}
+.table-title { font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); }
+.filter-btns { display: flex; gap: 2px; }
+.filter-btn {
+  font-family: 'Cormorant SC', serif; font-size: 11px; letter-spacing: 0.12em;
+  padding: 6px 14px; cursor: pointer; border: 1px solid transparent;
+  background: none; color: var(--muted);
+  transition: all 0.2s;
+}
+.filter-btn:hover { color: var(--off); border-color: var(--line2); }
+.filter-btn.active { color: var(--white); border-color: var(--line2); background: var(--lift); }
+table { width: 100%; border-collapse: collapse; }
+thead { background: var(--surface); }
+th {
+  font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--muted); padding: 12px 28px; text-align: left;
+  border-bottom: 1px solid var(--line);
+}
+td { padding: 14px 28px; border-bottom: 1px solid var(--line); }
+tbody tr { background: var(--deep); transition: background 0.2s; }
+tbody tr:hover { background: var(--lift); }
+tbody tr:last-child td { border-bottom: none; }
+.td-session { font-family: 'Cormorant Garamond', serif; font-size: 15px; font-weight: 300; color: var(--white); }
+.td-date { font-size: 11px; color: var(--muted); }
+.td-rounds { font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 300; }
+.td-rounds.blue { color: var(--blue); }
+.td-rounds.green { color: var(--green); }
+.td-cum { font-size: 11px; color: var(--dim); }
+.tag {
+  display: inline-block; font-size: 9px; letter-spacing: 0.12em;
+  padding: 3px 8px; border: 1px solid;
+  text-transform: uppercase;
+}
+.tag.blue { color: var(--blue); border-color: rgba(122,179,212,0.25); }
+.tag.green { color: var(--green); border-color: rgba(122,191,160,0.25); }
+
+/* ── INSIGHT GRID ──────────────────────────────────── */
+.insight-grid {
+  display: grid; grid-template-columns: repeat(3,1fr);
+  gap: 1px; background: var(--line); border: 1px solid var(--line);
+  margin-bottom: 24px;
+  animation: fadeUp 0.6s 0.2s ease both;
+}
+.insight-card {
+  background: var(--surface); padding: 28px 28px;
+  transition: background 0.3s; position: relative;
+}
+.insight-card:hover { background: var(--lift); }
+.insight-card.featured { background: var(--lift); }
+.i-label { font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+.i-val {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 22px; font-weight: 300; color: var(--white); margin-bottom: 8px;
+}
+.i-note { font-size: 11px; color: var(--muted); line-height: 1.7; }
+
+/* ── BCT CONTEXT ──────────────────────────────────── */
+.bct-box {
+  border: 1px solid var(--line); background: var(--surface);
+  padding: 28px 32px; margin-bottom: 24px;
+  display: none;
+  animation: fadeUp 0.4s ease both;
+}
+.bct-box.visible { display: block; }
+.bct-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 32px; margin-top: 16px; }
+.bct-col-label { font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+.bct-row { font-size: 12px; color: var(--off); padding: 4px 0; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; }
+.bct-row:last-child { border-bottom: none; }
+.bct-val { color: var(--muted); }
+
+/* ── MILESTONES ──────────────────────────────────── */
+.milestone-list { display: flex; flex-direction: column; }
+.milestone {
+  display: flex; align-items: center; gap: 16px;
+  padding: 14px 0; border-bottom: 1px solid var(--line);
+  transition: padding-left 0.25s;
+}
+.milestone:hover { padding-left: 6px; }
+.milestone:last-child { border-bottom: none; }
+.m-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.m-dot.done { background: var(--green); }
+.m-dot.next { background: transparent; border: 1px solid var(--dim); }
+.m-text { flex: 1; font-size: 12px; color: var(--off); }
+.m-date { font-size: 10px; color: var(--muted); letter-spacing: 0.06em; }
+
+/* ── RANGE ROWS ───────────────────────────────────── */
+.range-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 20px 0; border-bottom: 1px solid var(--line);
+  transition: padding-left 0.25s;
+}
+.range-row:hover { padding-left: 8px; }
+.range-row:last-child { border-bottom: none; }
+.range-name { font-family: 'Cormorant Garamond', serif; font-size: 18px; font-weight: 300; color: var(--white); }
+.range-addr { font-size: 10px; color: var(--muted); margin-top: 2px; letter-spacing: 0.04em; }
+.range-num { font-family: 'Cormorant Garamond', serif; font-size: 36px; font-weight: 300; }
+.range-lbl { font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); text-align: right; }
+
+/* ── PROGRESS ─────────────────────────────────────── */
+.progress-section { margin-bottom: 24px; }
+.prog-row { margin-bottom: 16px; }
+.prog-meta { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 10px; color: var(--muted); letter-spacing: 0.06em; }
+.prog-track { height: 1px; background: var(--edge); position: relative; }
+.prog-fill { height: 100%; position: absolute; top: 0; left: 0; transition: width 1.2s cubic-bezier(0.4,0,0.2,1); }
+
+/* ── ANIMATIONS ────────────────────────────────────── */
+@keyframes fadeDown {
+  from { opacity: 0; transform: translateY(-12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes countUp {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.page.active .panel { animation: fadeUp 0.5s ease both; }
+.page.active .panel:nth-child(2) { animation-delay: 0.07s; }
+.page.active .panel:nth-child(3) { animation-delay: 0.14s; }
+.page.active .stat-card:nth-child(1) { animation: fadeUp 0.5s 0.05s ease both; }
+.page.active .stat-card:nth-child(2) { animation: fadeUp 0.5s 0.1s ease both; }
+.page.active .stat-card:nth-child(3) { animation: fadeUp 0.5s 0.15s ease both; }
+.page.active .stat-card:nth-child(4) { animation: fadeUp 0.5s 0.2s ease both; }
+
+/* ── RESPONSIVE ─────────────────────────────────────── */
+@media (max-width: 900px) {
+  .header { padding: 24px; flex-direction: column; align-items: flex-start; gap: 16px; }
+  .h-meta { text-align: left; }
+  .nav { padding: 0 24px; }
+  .main { padding: 28px 24px; }
+  .stat-row, .panel-row, .firearm-grid, .insight-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div>
+    <div class="h-monogram">John David Meyers &nbsp;&mdash;&nbsp; St. Lawrence County, New York</div>
+    <div class="h-title">Shooting <em>Log</em></div>
+  </div>
+  <div class="h-meta">
+    <div class="h-lic">License <span>C00024000</span> &nbsp;&nbsp; Issued <span>12 / 6 / 2022</span> &nbsp;&nbsp; Carry Concealed / Semi-Auto Rifle</div>
+    <div class="h-total" id="h-total-val">520</div>
+    <div class="h-total-lbl">rounds on record</div>
+  </div>
+</div>
+
+<!-- NAV -->
+<nav class="nav">
+  <button class="nav-tab active" onclick="showPage('overview',this)">Overview</button>
+  <button class="nav-tab" onclick="showPage('firearms',this)">Firearms</button>
+  <button class="nav-tab" onclick="showPage('sessions',this)">Sessions</button>
+  <button class="nav-tab" onclick="showPage('insights',this)">Insights</button>
+  <div style="margin-left:auto;display:flex;align-items:center;padding:0 8px"><span id="sync-status" style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.06em;color:#6a6760">Loading2026</span></div>
+</nav>
+
+<div class="main">
+
+<!-- ══ OVERVIEW ══════════════════════════════════════ -->
+<div class="page active" id="page-overview">
+  <div class="stat-row">
+    <div class="stat-card">
+      <div class="stat-label">Total rounds</div>
+      <div class="stat-value white" data-count="total">520</div>
+      <div class="stat-sub" id="tot-sub">All firearms &amp; locations</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Sessions logged</div>
+      <div class="stat-value gold" data-count="sessions">15</div>
+      <div class="stat-sub">Sep 2023 &ndash; Jul 2025</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Glock G43X MOS</div>
+      <div class="stat-value blue" data-count="glock">150</div>
+      <div class="stat-sub" id="glock-sub">9MM &mdash; 5 sessions</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">M4 Carbine (BCT)</div>
+      <div class="stat-value green" data-count="m4">370</div>
+      <div class="stat-sub" id="m4-sub">5.56MM &mdash; 10 sessions</div>
+    </div>
+  </div>
+
+  <div class="panel-row single">
+    <div class="panel">
+      <div class="panel-label">Cumulative rounds &mdash; all time</div>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-line" style="background:var(--blue)"></div>Glock G43X MOS</div>
+        <div class="legend-item"><div class="legend-line" style="background:var(--green); border-top: 1px dashed var(--green)"></div>M4 Carbine</div>
+        <div class="legend-item"><div class="legend-line" style="background:var(--gold); opacity:0.5"></div>Combined</div>
+      </div>
+      <div class="chart-wrap" style="height:220px">
+        <canvas id="cumulativeChart" role="img" aria-label="Cumulative rounds over time reaching 520 total"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel-row">
+    <div class="panel">
+      <div class="panel-label">Firearm split</div>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-block" style="background:var(--blue)"></div>Glock &mdash; 29%</div>
+        <div class="legend-item"><div class="legend-block" style="background:var(--green)"></div>M4 &mdash; 71%</div>
+      </div>
+      <div class="chart-wrap" style="height:190px">
+        <canvas id="donutChart" role="img" aria-label="Donut: Glock 150 rounds, M4 370 rounds"></canvas>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-label">Rounds per session &mdash; all</div>
+      <div class="chart-wrap" style="height:190px">
+        <canvas id="allBar" role="img" aria-label="All sessions bar chart"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ FIREARMS ══════════════════════════════════════ -->
+<div class="page" id="page-firearms">
+  <div class="firearm-grid">
+    <div class="firearm-card blue-card active-card" id="card-glock" onclick="selectFirearm('glock')">
+      <div class="fc-head">
+        <div>
+          <div class="fc-name blue">Glock G43X MOS</div>
+          <div class="fc-type">Subcompact carry pistol &mdash; 9mm Luger</div>
+        </div>
+        <div class="fc-badge">Personal CCW</div>
+      </div>
+      <div class="fc-specs">
+        <div class="spec-row"><span class="spec-key">Serial No.</span><span class="spec-val">BXLL051</span></div>
+        <div class="spec-row"><span class="spec-key">Action</span><span class="spec-val">Striker-fired / Safe Action</span></div>
+        <div class="spec-row"><span class="spec-key">Barrel</span><span class="spec-val">3.41 in. &mdash; GMB match-grade</span></div>
+        <div class="spec-row"><span class="spec-key">Overall length</span><span class="spec-val">6.50 in.</span></div>
+        <div class="spec-row"><span class="spec-key">Height (with mag)</span><span class="spec-val">5.04 in.</span></div>
+        <div class="spec-row"><span class="spec-key">Width</span><span class="spec-val">1.10 in. &mdash; Slimline frame</span></div>
+        <div class="spec-row"><span class="spec-key">Weight loaded</span><span class="spec-val">23.1 oz.</span></div>
+        <div class="spec-row"><span class="spec-key">Capacity</span><span class="spec-val">10+1 factory / 15+1 Shield Arms</span></div>
+        <div class="spec-row"><span class="spec-key">Optics</span><span class="spec-val">MOS slide cuts &mdash; micro red dot ready</span></div>
+        <div class="spec-row"><span class="spec-key">Rail</span><span class="spec-val">Glock Slim Mounting Rail</span></div>
+        <div class="spec-row"><span class="spec-key">Location</span><span class="spec-val">Parishville Sportsmen's Club, NY</span></div>
+        <div class="spec-row"><span class="spec-key">Rounds on record</span><span class="spec-val accent-blue">150 rds &mdash; 5 sessions</span></div>
+      </div>
+    </div>
+    <div class="firearm-card green-card" id="card-m4" onclick="selectFirearm('m4')">
+      <div class="fc-head">
+        <div>
+          <div class="fc-name green">M4 Carbine</div>
+          <div class="fc-type">Military rifle &mdash; 5.56x45mm NATO</div>
+        </div>
+        <div class="fc-badge">US Army BCT</div>
+      </div>
+      <div class="fc-specs">
+        <div class="spec-row"><span class="spec-key">Designation</span><span class="spec-val">M4 / M4A1 Carbine</span></div>
+        <div class="spec-row"><span class="spec-key">Action</span><span class="spec-val">Gas-operated, rotating bolt</span></div>
+        <div class="spec-row"><span class="spec-key">Barrel</span><span class="spec-val">14.5 in.</span></div>
+        <div class="spec-row"><span class="spec-key">Overall length</span><span class="spec-val">33 in. (stock extended)</span></div>
+        <div class="spec-row"><span class="spec-key">Weight unloaded</span><span class="spec-val">6.49 lbs.</span></div>
+        <div class="spec-row"><span class="spec-key">Muzzle velocity</span><span class="spec-val">2,970 ft/s</span></div>
+        <div class="spec-row"><span class="spec-key">Effective range</span><span class="spec-val">500m point target</span></div>
+        <div class="spec-row"><span class="spec-key">Capacity</span><span class="spec-val">30-round STANAG mag</span></div>
+        <div class="spec-row"><span class="spec-key">Sights</span><span class="spec-val">Iron sights &mdash; A2 front post / rear aperture</span></div>
+        <div class="spec-row"><span class="spec-key">Fire modes</span><span class="spec-val">Semi-auto / 3-round burst</span></div>
+        <div class="spec-row"><span class="spec-key">Location</span><span class="spec-val">Fort Jackson, SC &mdash; BCT 2025</span></div>
+        <div class="spec-row"><span class="spec-key">Rounds on record</span><span class="spec-val accent-green">370 rds &mdash; 10 sessions</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel-row single">
+    <div class="panel">
+      <div class="panel-label" id="fc-panel-label">Glock G43X MOS &mdash; sessions &amp; cumulative</div>
+      <div class="legend" id="fc-legend">
+        <div class="legend-item"><div class="legend-block" style="background:var(--blue)"></div>Rounds per session</div>
+        <div class="legend-item"><div class="legend-line" style="background:var(--blue);opacity:0.4"></div>Cumulative</div>
+      </div>
+      <div class="chart-wrap" style="height:200px">
+        <canvas id="fcChart" role="img" aria-label="Selected firearm detail chart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="bct-box" id="bct-box">
+    <div class="panel-label">Basic rifle marksmanship &mdash; context</div>
+    <div class="bct-grid">
+      <div>
+        <div class="bct-col-label">Qualification tiers</div>
+        <div class="bct-row"><span>Expert</span><span class="bct-val">36 &ndash; 40 hits</span></div>
+        <div class="bct-row"><span>Sharpshooter</span><span class="bct-val">30 &ndash; 35 hits</span></div>
+        <div class="bct-row"><span>Marksman</span><span class="bct-val">23 &ndash; 29 hits</span></div>
+        <div class="bct-row"><span>Unqualified</span><span class="bct-val">&lt; 23 hits</span></div>
+      </div>
+      <div>
+        <div class="bct-col-label">Qualification course</div>
+        <div class="bct-row"><span>Targets</span><span class="bct-val">40 pop-up silhouettes</span></div>
+        <div class="bct-row"><span>Distance</span><span class="bct-val">50 &ndash; 300 meters</span></div>
+        <div class="bct-row"><span>Positions</span><span class="bct-val">Prone / Kneeling / Standing</span></div>
+        <div class="bct-row"><span>Sights</span><span class="bct-val">Iron sights (A2 / aperture)</span></div>
+      </div>
+      <div>
+        <div class="bct-col-label">Fort Jackson</div>
+        <div class="bct-row"><span>Location</span><span class="bct-val">Columbia, SC</span></div>
+        <div class="bct-row"><span>Duration</span><span class="bct-val">10 weeks</span></div>
+        <div class="bct-row"><span>Scale</span><span class="bct-val">~50% of Army BCT</span></div>
+        <div class="bct-row"><span>Motto</span><span class="bct-val">Victory Starts Here</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SESSIONS ══════════════════════════════════════ -->
+<div class="page" id="page-sessions">
+  <div class="table-wrap">
+    <div class="table-head-bar">
+      <div class="table-title">All sessions</div>
+      <div class="filter-btns">
+        <button class="filter-btn active" onclick="filterSessions('all',this)">All</button>
+        <button class="filter-btn" onclick="filterSessions('glock',this)">Glock</button>
+        <button class="filter-btn" onclick="filterSessions('m4',this)">M4 / BCT</button>
+      </div>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Date</th>
+          <th>Firearm</th>
+          <th>Caliber</th>
+          <th>Location</th>
+          <th>Rounds</th>
+          <th>Cumulative</th>
+        </tr>
+      </thead>
+      <tbody id="sessions-body"></tbody>
+    </table>
+  </div>
+  <div class="panel-row single">
+    <div class="panel">
+      <div class="panel-label">Rounds per session &mdash; chronological</div>
+      <div class="chart-wrap" style="height:180px">
+        <canvas id="sessionsBar" role="img" aria-label="Sessions bar chart"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ INSIGHTS ══════════════════════════════════════ -->
+<div class="page" id="page-insights">
+  <div class="insight-grid">
+    <div class="insight-card featured">
+      <div class="i-label">Avg rounds per session</div>
+      <div class="i-val" id="ins-avg">34.7 rounds</div>
+      <div class="i-note">BCT avg 37 rds. Glock avg 30 rds. BCT sessions show greater variance &mdash; qual day peaked at 80 rds.</div>
+    </div>
+    <div class="insight-card">
+      <div class="i-label">Peak session</div>
+      <div class="i-val" id="ins-peak">80 rds &mdash; Feb 11, 2025</div>
+      <div class="i-note">Likely M4 qualification day. Army courses engage 40 targets across prone, kneeling, and standing positions.</div>
+    </div>
+    <div class="insight-card">
+      <div class="i-label">BCT fire intensity</div>
+      <div class="i-val">370 rds in 21 days</div>
+      <div class="i-note">Jan 29 &ndash; Feb 18, 2025. Consistent with Army BRM curriculum &mdash; zeroing, grouping, and qual phases.</div>
+    </div>
+    <div class="insight-card">
+      <div class="i-label">Glock session gap</div>
+      <div class="i-val">~6 months average</div>
+      <div class="i-note">Longest gap 9 months (Jul &rsquo;24 to Jan &rsquo;25 BCT). Each Parishville session = 3 full magazine cycles at 10+1 capacity.</div>
+    </div>
+    <div class="insight-card">
+      <div class="i-label">Muzzle velocity delta</div>
+      <div class="i-val">2,970 vs 1,150 ft/s</div>
+      <div class="i-note">M4 5.56 vs Glock 9MM. M4 round travels ~2.6x faster. Effective range delta: 500m vs ~50m defensive.</div>
+    </div>
+    <div class="insight-card">
+      <div class="i-label">Rounds to 1,000</div>
+      <div class="i-val" id="ins-goal">480 remaining</div>
+      <div class="i-note">At current Glock pace (30 rds / session, ~6 months apart) that is roughly 16 more Parishville sessions.</div>
+    </div>
+  </div>
+
+  <div class="panel-row">
+    <div class="panel">
+      <div class="panel-label">Monthly activity</div>
+      <div class="chart-wrap" style="height:170px">
+        <canvas id="timelineChart" role="img" aria-label="Monthly rounds fired"></canvas>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-label">Progress toward 1,000 rounds</div>
+      <div class="progress-section" style="margin-top:8px">
+        <div class="prog-row">
+          <div class="prog-meta"><span>Total</span><span id="prog-total-label">520 / 1,000</span></div>
+          <div class="prog-track"><div class="prog-fill" id="prog-total" style="width:0%; background:var(--white)"></div></div>
+        </div>
+        <div class="prog-row" style="margin-top:20px">
+          <div class="prog-meta"><span>Glock G43X MOS</span><span id="prog-glock-label">150 / 500</span></div>
+          <div class="prog-track"><div class="prog-fill" id="prog-glock" style="width:0%; background:var(--blue)"></div></div>
+        </div>
+        <div class="prog-row" style="margin-top:20px">
+          <div class="prog-meta"><span>M4 Carbine</span><span id="prog-m4-label">370 / 500</span></div>
+          <div class="prog-track"><div class="prog-fill" id="prog-m4" style="width:0%; background:var(--green)"></div></div>
+        </div>
+      </div>
+
+      <div style="margin-top:32px">
+        <div class="panel-label">Ranges</div>
+        <div class="range-row">
+          <div>
+            <div class="range-name">Parishville Sportsmen's Club</div>
+            <div class="range-addr">2 Newton Rd, Parishville, NY 13672</div>
+          </div>
+          <div>
+            <div class="range-num" style="color:var(--blue);text-align:right">150</div>
+            <div class="range-lbl">rounds</div>
+          </div>
+        </div>
+        <div class="range-row">
+          <div>
+            <div class="range-name">Fort Jackson</div>
+            <div class="range-addr">Columbia, SC &mdash; US Army BCT 2025</div>
+          </div>
+          <div>
+            <div class="range-num" style="color:var(--green);text-align:right">370</div>
+            <div class="range-lbl">rounds</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel-row single" style="margin-top:0">
+    <div class="panel">
+      <div class="panel-label">Milestones</div>
+      <div class="milestone-list">
+        <div class="milestone"><div class="m-dot done"></div><div class="m-text">First round fired &mdash; Glock G43X MOS, Parishville</div><div class="m-date">Sep 27, 2023</div></div>
+        <div class="milestone"><div class="m-dot done"></div><div class="m-text">100 rounds cumulative</div><div class="m-date">Jul 18, 2024</div></div>
+        <div class="milestone"><div class="m-dot done"></div><div class="m-text">BCT begins &mdash; M4 Carbine, Fort Jackson</div><div class="m-date">Jan 29, 2025</div></div>
+        <div class="milestone"><div class="m-dot done"></div><div class="m-text">250 rounds cumulative</div><div class="m-date">Feb 5, 2025</div></div>
+        <div class="milestone"><div class="m-dot done"></div><div class="m-text">500 rounds cumulative</div><div class="m-date">Feb 18, 2025</div></div>
+        <div class="milestone"><div class="m-dot done"></div><div class="m-text">BCT complete &mdash; graduation</div><div class="m-date">Mar 2025</div></div>
+        <div class="milestone"><div class="m-dot next"></div><div class="m-text">Next Parishville session</div><div class="m-date">TBD</div></div>
+        <div class="milestone"><div class="m-dot next"></div><div class="m-text">1,000 rounds total</div><div class="m-date">Goal</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- .main -->
+
+<script>
+/* ── SHEET URL ─────────────────────────────────────────────
+   After deploying the Apps Script, paste your Web App URL here.
+   Leave blank to run on built-in fallback data.
+──────────────────────────────────────────────────────────── */
+const SHEET_URL = '';
+
+/* ── FALLBACK DATA ─────────────────────────────────────────── */
+const FALLBACK = [
+  {n:'Session 1', d:'Sep 27, 2023', t:'glock', cal:'9MM',    loc:"Parishville SC",   r:30, cum:30},
+  {n:'Session 2', d:'Oct 2, 2023',  t:'glock', cal:'9MM',    loc:"Parishville SC",   r:30, cum:60},
+  {n:'Session 3', d:'Jul 18, 2024', t:'glock', cal:'9MM',    loc:"Parishville SC",   r:30, cum:90},
+  {n:'Session 4', d:'Oct 14, 2024', t:'glock', cal:'9MM',    loc:"Parishville SC",   r:30, cum:120},
+  {n:'BCT 1',     d:'Jan 29, 2025', t:'m4',    cal:'5.56MM', loc:"Fort Jackson, SC", r:30, cum:150},
+  {n:'BCT 2',     d:'Jan 30, 2025', t:'m4',    cal:'5.56MM', loc:"Fort Jackson, SC", r:30, cum:180},
+  {n:'BCT 3',     d:'Jan 31, 2025', t:'m4',    cal:'5.56MM', loc:"Fort Jackson, SC", r:30, cum:210},
+  {n:'BCT 4',     d:'Feb 4, 2025',  t:'m4',    cal:'5.56MM', loc:"Fort Jackson, SC", r:20, cum:230},
+  {n:'BCT 5',     d:'Feb 5, 2025',  t:'m4',    cal:'5.56MM', loc:"Fort Jackson, SC", r:40, cum:270},
+  {n:'BCT 6',     d:'Feb 10, 2025', t:'m4',    cal:'5.56MM', loc:"Fort Jackson, SC", r:40, cum:310},
+  {n:'BCT 7',     d:'Feb 11, 2025', t:'m4',    cal:'5.56MM', loc:"Fort Jackson, SC", r:80, cum:390},
+  {n:'BCT 8',     d:'Feb 12, 2025', t:'m4',    cal:'5.56MM', loc:"Fort Jackson, SC", r:40, cum:430},
+  {n:'BCT 9',     d:'Feb 18, 2025', t:'m4',    cal:'5.56MM', loc:"Fort Jackson, SC", r:40, cum:470},
+  {n:'BCT 10',    d:'Feb 18, 2025', t:'m4',    cal:'5.56MM', loc:"Fort Jackson, SC", r:20, cum:490},
+  {n:'Session 5', d:'Jul 17, 2025', t:'glock', cal:'9MM',    loc:"Parishville SC",   r:30, cum:520},
+];
+
+/* ── LIVE STATE ─────────────────────────────────────────────── */
+let S = [];
+
+function deriveGlockM4(sessions) {
+  let cg = 0, cm = 0;
+  return sessions.map(s => {
+    if (s.t === 'glock') cg += s.r; else cm += s.r;
+    return { ...s, cg, cm };
+  });
+}
+
+function calcSummary(sessions) {
+  const rounds = sessions.map(s => s.r);
+  const glock  = sessions.filter(s => s.t === 'glock');
+  const m4     = sessions.filter(s => s.t === 'm4');
+  const total  = rounds.reduce((a,b)=>a+b, 0);
+  return {
+    totalRounds:   total,
+    totalSessions: sessions.length,
+    avgRounds:     sessions.length ? +(total/sessions.length).toFixed(1) : 0,
+    peakSession:   Math.max(...rounds, 0),
+    glockTotal:    glock.reduce((a,s)=>a+s.r,0),
+    glockSessions: glock.length,
+    m4Total:       m4.reduce((a,s)=>a+s.r,0),
+    m4Sessions:    m4.length,
+    toGoal:        Math.max(0, 1000 - total),
+    pctGoal:       +(total/1000).toFixed(4)
+  };
+}
+
+let SUMMARY = calcSummary(deriveGlockM4(FALLBACK));
+
+/* ── STATUS BAR ──────────────────────────────────────────────── */
+function setStatus(state, ts) {
+  const el = document.getElementById('sync-status');
+  if (!el) return;
+  const map = {
+    loading:  ['Connecting to Google Sheet\u2026', '#6a6760'],
+    live:     ['\u25cf Live \u2014 updated ' + (ts||''), '#7abfa0'],
+    fallback: ['\u25cb Offline \u2014 built-in data (add SHEET_URL to go live)', '#c9a96e'],
+    error:    ['\u25cb Sheet unavailable \u2014 using built-in data', '#e05252'],
+  };
+  const [label, color] = map[state] || map.fallback;
+  el.textContent = label; el.style.color = color;
+}
+
+/* ── FETCH ───────────────────────────────────────────────────── */
+async function loadData() {
+  setStatus('loading');
+  if (!SHEET_URL) {
+    S = deriveGlockM4(FALLBACK);
+    SUMMARY = calcSummary(S);
+    setStatus('fallback');
+    return;
+  }
+  try {
+    const res = await fetch(SHEET_URL);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const json = await res.json();
+    const raw = (json.sessions || []).map(s => ({ ...s, t: s.t.toLowerCase() }));
+    S = deriveGlockM4(raw);
+    SUMMARY = calcSummary(S);
+    if (json.summary) {
+      // override with Sheet's own SUMIF values if available
+      Object.assign(SUMMARY, {
+        glockTotal:    json.summary.glockTotal    || SUMMARY.glockTotal,
+        m4Total:       json.summary.m4Total       || SUMMARY.m4Total,
+        glockSessions: json.summary.glockSessions || SUMMARY.glockSessions,
+        m4Sessions:    json.summary.m4Sessions    || SUMMARY.m4Sessions,
+      });
+    }
+    const ts = json.lastUpdated
+      ? new Date(json.lastUpdated).toLocaleString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})
+      : '';
+    setStatus('live', ts);
+  } catch(e) {
+    console.warn('Sheet fetch failed, using fallback.', e);
+    S = deriveGlockM4(FALLBACK);
+    SUMMARY = calcSummary(S);
+    setStatus('error');
+  }
+}
+
+/* ── CHART HELPERS ───────────────────────────────────────────── */
+const BLUE='#7ab3d4', GREEN='#7abfa0', GOLD='#c9a96e', MUTED='#6a6760';
+const GRID='rgba(255,255,255,0.04)', TICK={color:MUTED, font:{family:"'DM Mono'",size:10}};
+const BASE = {
+  responsive:true, maintainAspectRatio:false,
+  plugins:{legend:{display:false}},
+  scales:{
+    x:{grid:{color:GRID}, ticks:TICK, border:{color:'rgba(255,255,255,0.06)'}},
+    y:{grid:{color:GRID}, ticks:TICK, border:{color:'rgba(255,255,255,0.06)'}, beginAtZero:true}
+  }
+};
+
+let charts = {};
+let fcChart = null;
+
+function mk(id, type, data, opts) {
+  const el = document.getElementById(id);
+  if (!el) return null;
+  if (charts[id]) { charts[id].destroy(); }
+  charts[id] = new Chart(el, {type, data, options:opts});
+  return charts[id];
+}
+
+/* ── RENDER ──────────────────────────────────────────────────── */
+function renderAll() {
+  const LBLS = S.map(s => s.n);
+
+  // Update stat cards
+  const vals = {
+    total: SUMMARY.totalRounds, sessions: SUMMARY.totalSessions,
+    glock: SUMMARY.glockTotal,  m4: SUMMARY.m4Total
+  };
+  document.querySelectorAll('[data-count]').forEach(el => {
+    const v = vals[el.dataset.count];
+    if (v !== undefined) el.textContent = v;
+  });
+  const hv = document.getElementById('h-total-val');
+  if (hv) hv.textContent = SUMMARY.totalRounds;
+
+  // Update sub-labels
+  const glockSub = document.getElementById('glock-sub');
+  if (glockSub) glockSub.textContent = '9MM \u2014 ' + SUMMARY.glockSessions + ' sessions';
+  const m4Sub = document.getElementById('m4-sub');
+  if (m4Sub) m4Sub.textContent = '5.56MM \u2014 ' + SUMMARY.m4Sessions + ' sessions';
+  const totSub = document.getElementById('tot-sub');
+  if (totSub) totSub.textContent = 'All firearms & locations';
+
+  // Cumulative line
+  mk('cumulativeChart','line',{labels:LBLS, datasets:[
+    {data:S.map(s=>s.cg), borderColor:BLUE, backgroundColor:'rgba(122,179,212,0.06)', borderWidth:1.5, pointRadius:3, pointBackgroundColor:BLUE, tension:0.35, fill:true},
+    {data:S.map(s=>s.cm), borderColor:GREEN, backgroundColor:'rgba(122,191,160,0.06)', borderWidth:1.5, pointRadius:3, pointBackgroundColor:GREEN, tension:0.35, fill:true, borderDash:[5,4]},
+    {data:S.map(s=>s.cum), borderColor:GOLD, backgroundColor:'transparent', borderWidth:1, pointRadius:2, pointBackgroundColor:GOLD, tension:0.35, borderDash:[2,5], fill:false},
+  ]},{...BASE, scales:{...BASE.scales, x:{...BASE.scales.x, ticks:{...TICK, maxTicksLimit:10}}}});
+
+  // Donut
+  const total = SUMMARY.totalRounds || 1;
+  mk('donutChart','doughnut',{
+    labels:['Glock G43X MOS','M4 Carbine'],
+    datasets:[{data:[SUMMARY.glockTotal, SUMMARY.m4Total], backgroundColor:[BLUE,GREEN], borderWidth:0, hoverOffset:8}]
+  },{responsive:true, maintainAspectRatio:false, cutout:'68%', plugins:{legend:{display:false}, tooltip:{callbacks:{label:ctx=>' '+ctx.parsed+' rds ('+Math.round(ctx.parsed/total*100)+'%)'}}}});
+
+  // All sessions bar
+  mk('allBar','bar',{labels:LBLS, datasets:[{data:S.map(s=>s.r), backgroundColor:S.map(s=>s.t==='glock'?BLUE:GREEN), borderRadius:1, borderSkipped:false}]},
+    {...BASE, scales:{...BASE.scales, x:{...BASE.scales.x, ticks:{...TICK, maxRotation:45, maxTicksLimit:15}}}, plugins:{legend:{display:false}, tooltip:{callbacks:{label:ctx=>' '+ctx.parsed.y+' rds \u2014 '+S[ctx.dataIndex].n}}}});
+
+  // Sessions page bar
+  mk('sessionsBar','bar',{labels:LBLS, datasets:[{data:S.map(s=>s.r), backgroundColor:S.map(s=>s.t==='glock'?BLUE:GREEN), borderRadius:1}]},
+    {...BASE, scales:{...BASE.scales, x:{...BASE.scales.x, ticks:{...TICK, maxRotation:45}}}});
+
+  // Timeline
+  buildTimeline();
+
+  // Insights numbers
+  updateInsights();
+
+  // Progress bars
+  animateProgress();
+
+  // Table
+  buildTable('all');
+
+  // Firearm chart
+  buildFcChart('glock');
+}
+
+function buildTimeline() {
+  const monthMap = {};
+  S.forEach(s => {
+    const key = s.d.replace(/\d+,\s*/,'').trim(); // "Sep 2023" etc
+    const parts = s.d.split(' ');
+    const mk2 = parts[0] + ' \'' + (parts[parts.length-1]||'').slice(-2);
+    if (!monthMap[mk2]) monthMap[mk2] = {rounds:0, type:s.t};
+    monthMap[mk2].rounds += s.r;
+  });
+  const labels = Object.keys(monthMap);
+  const rounds = labels.map(k => monthMap[k].rounds);
+  const colors = labels.map(k => monthMap[k].type === 'glock' ? BLUE : GREEN);
+  mk('timelineChart','bar',{labels, datasets:[{data:rounds, backgroundColor:colors, borderRadius:1}]},
+    {...BASE, plugins:{legend:{display:false}, tooltip:{callbacks:{label:ctx=>' '+ctx.parsed.y+' rounds'}}}});
+}
+
+function updateInsights() {
+  const avg = document.getElementById('ins-avg');
+  if (avg) avg.textContent = SUMMARY.avgRounds.toFixed(1) + ' rounds';
+  const peak = document.getElementById('ins-peak');
+  if (peak) {
+    const pkSession = S.reduce((best,s) => s.r > best.r ? s : best, {r:0,n:'',d:''});
+    peak.textContent = pkSession.r + ' rds \u2014 ' + pkSession.d;
+  }
+  const bct = document.getElementById('ins-bct');
+  if (bct) bct.textContent = SUMMARY.m4Total + ' rds \u2014 ' + SUMMARY.m4Sessions + ' sessions';
+  const goal = document.getElementById('ins-goal');
+  if (goal) goal.textContent = SUMMARY.toGoal + ' remaining';
+}
+
+/* ── FIREARM DETAIL CHART ────────────────────────────────────── */
+function buildFcChart(type) {
+  const el = document.getElementById('fcChart');
+  if (!el) return;
+  if (fcChart) { fcChart.destroy(); }
+  const filtered = S.filter(s => s.t === type);
+  const col = type === 'glock' ? BLUE : GREEN;
+  const cumKey = type === 'glock' ? 'cg' : 'cm';
+  fcChart = new Chart(el, {
+    type:'bar',
+    data:{
+      labels: filtered.map(s=>s.n),
+      datasets:[
+        {data:filtered.map(s=>s.r), backgroundColor:col+'99', borderRadius:1, yAxisID:'y', order:2},
+        {data:filtered.map(s=>s[cumKey]), type:'line', borderColor:col+'66', backgroundColor:'transparent',
+         borderWidth:1, borderDash:[4,3], pointRadius:2, pointBackgroundColor:col+'66', yAxisID:'y2', order:1, tension:0.3}
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{
+        x:{grid:{color:GRID}, ticks:TICK, border:{color:'rgba(255,255,255,0.06)'}},
+        y:{grid:{color:GRID}, ticks:TICK, border:{color:'rgba(255,255,255,0.06)'}, beginAtZero:true},
+        y2:{position:'right', grid:{display:false}, ticks:TICK, border:{color:'rgba(255,255,255,0.06)'}, beginAtZero:true}
+      }
+    }
+  });
+}
+
+/* ── TABLE ───────────────────────────────────────────────────── */
+function buildTable(filter) {
+  const rows = filter === 'all' ? S : S.filter(s => s.t === filter);
+  document.getElementById('sessions-body').innerHTML = rows.map((s,i) => `
+    <tr>
+      <td class="td-date">${String(i+1).padStart(2,'0')}</td>
+      <td class="td-date">${s.d}</td>
+      <td><span class="tag ${s.t}">${s.t==='glock'?'Glock G43X MOS':'M4 Carbine'}</span></td>
+      <td class="td-date">${s.cal}</td>
+      <td class="td-date">${s.loc}</td>
+      <td class="td-rounds ${s.t}">${s.r}</td>
+      <td class="td-cum">${s.cum}</td>
+    </tr>
+  `).join('');
+}
+
+function filterSessions(f, btn) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  buildTable(f);
+}
+
+/* ── FIREARM CARD SELECT ─────────────────────────────────────── */
+function selectFirearm(type) {
+  document.getElementById('card-glock').classList.remove('active-card');
+  document.getElementById('card-m4').classList.remove('active-card');
+  document.getElementById('card-' + type).classList.add('active-card');
+  const bct = document.getElementById('bct-box');
+  if (type === 'm4') {
+    bct.classList.add('visible');
+    document.getElementById('fc-panel-label').textContent = 'M4 Carbine \u2014 BCT sessions & cumulative';
+    document.getElementById('fc-legend').innerHTML = '<div class="legend-item"><div class="legend-block" style="background:var(--green)"></div>Rounds per session</div><div class="legend-item"><div class="legend-line" style="background:var(--green);opacity:0.4"></div>Cumulative</div>';
+  } else {
+    bct.classList.remove('visible');
+    document.getElementById('fc-panel-label').textContent = 'Glock G43X MOS \u2014 sessions & cumulative';
+    document.getElementById('fc-legend').innerHTML = '<div class="legend-item"><div class="legend-block" style="background:var(--blue)"></div>Rounds per session</div><div class="legend-item"><div class="legend-line" style="background:var(--blue);opacity:0.4"></div>Cumulative</div>';
+  }
+  buildFcChart(type);
+}
+
+/* ── PAGE NAV ────────────────────────────────────────────────── */
+function showPage(name, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  btn.classList.add('active');
+  if (name === 'insights') setTimeout(animateProgress, 200);
+}
+
+/* ── PROGRESS BARS ───────────────────────────────────────────── */
+function animateProgress() {
+  const pct = Math.round(SUMMARY.pctGoal * 100);
+  const gPct = Math.round(SUMMARY.glockTotal / 500 * 100);
+  const mPct = Math.round(SUMMARY.m4Total / 500 * 100);
+  const fills = [
+    ['prog-total', Math.min(pct, 100) + '%'],
+    ['prog-glock', Math.min(gPct, 100) + '%'],
+    ['prog-m4',    Math.min(mPct, 100) + '%'],
+  ];
+  fills.forEach(([id, width]) => {
+    const el = document.getElementById(id);
+    if (el) el.style.width = width;
+  });
+  const pl = document.getElementById('prog-total-label');
+  if (pl) pl.textContent = SUMMARY.totalRounds + ' / 1,000';
+  const gl = document.getElementById('prog-glock-label');
+  if (gl) gl.textContent = SUMMARY.glockTotal + ' / 500';
+  const ml = document.getElementById('prog-m4-label');
+  if (ml) ml.textContent = SUMMARY.m4Total + ' / 500';
+}
+
+/* ── COUNT-UP (fires once only) ──────────────────────────────── */
+function countUp(el) {
+  const target = parseInt(el.textContent) || 0;
+  const dur = 900, start = performance.now();
+  const step = now => {
+    const t = Math.min((now - start) / dur, 1);
+    const ease = 1 - Math.pow(1 - t, 3);
+    el.textContent = Math.round(ease * target);
+    if (t < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+document.querySelectorAll('[data-count]').forEach(el => {
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) { countUp(el); obs.disconnect(); } });
+  }, {threshold: 0.5});
+  obs.observe(el);
+});
+
+/* ── BOOT ─────────────────────────────────────────────────────── */
+window.addEventListener('load', async () => {
+  await loadData();
+  renderAll();
+});
+</script>
+</body>
+</html>
